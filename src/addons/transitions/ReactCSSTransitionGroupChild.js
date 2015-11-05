@@ -78,6 +78,7 @@ var ReactCSSTransitionGroupChild = React.createClass({
       }
 
       clearTimeout(timeout);
+      this.transitionTimeouts[animationType] = null;
 
       CSSCore.removeClass(node, className);
       CSSCore.removeClass(node, activeClassName);
@@ -89,7 +90,7 @@ var ReactCSSTransitionGroupChild = React.createClass({
       if (finishCallback) {
         finishCallback();
       }
-    };
+    }.bind(this);
 
     CSSCore.addClass(node, className);
 
@@ -100,7 +101,7 @@ var ReactCSSTransitionGroupChild = React.createClass({
     if (userSpecifiedDelay) {
       // Clean-up the animation after the specified delay
       timeout = setTimeout(endListener, userSpecifiedDelay);
-      this.transitionTimeouts.push(timeout);
+      this.transitionTimeouts[animationType] = timeout;
     } else {
       // DEPRECATED: this listener will be removed in a future version of react
       ReactTransitionEvents.addEndEventListener(node, endListener);
@@ -127,16 +128,18 @@ var ReactCSSTransitionGroupChild = React.createClass({
 
   componentWillMount: function() {
     this.classNameQueue = [];
-    this.transitionTimeouts = [];
+    this.transitionTimeouts = {};
   },
 
   componentWillUnmount: function() {
     if (this.timeout) {
       clearTimeout(this.timeout);
     }
-    this.transitionTimeouts.forEach(function(timeout) {
-      clearTimeout(timeout);
-    });
+    Object.keys(this.transitionTimeouts).forEach(function(animationType) {
+      if (this.transitionTimeouts[animationType]) {
+        clearTimeout(this.transitionTimeouts[animationType]);
+      }
+    }, this);
   },
 
   componentWillAppear: function(done) {
